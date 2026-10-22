@@ -26,4 +26,10 @@ Compare against the build alttpr.com runs today:
         --randomizer-patches <alttpr seed JSON files or dirs> \
         --env LD_LIBRARY_PATH=<dir with libicu70>   # the old .NET Core 2.0 build needs an ICU it recognises
 
+CI (`.github/workflows/ci.yml`) runs this on every PR with a stand-in ROM
+(zeros plus the title header), which covers boss, pot, health and damage
+options; dungeon enemy shuffle needs real room data and throws identically in
+both builds there. Set the `ROM_URL` repository secret to a private URL for
+the JP 1.0 ROM and a second job runs the same cases against the real ROM.
+
 Never commit a ROM to this repository.

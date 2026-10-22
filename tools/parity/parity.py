@@ -10,6 +10,9 @@ app/Enemizer.php, and fails if any output patch differs byte for byte.
 
 --rom may be the real JP 1.0 ROM, or a synthetic stand-in made with
 --make-synthetic-rom PATH (no game data, so it can run in CI).
+
+fixtures/ holds the z3randomizer base patch production uses (79bbb4ad) and a
+few alttpr seed write logs. They are randomizer output, not ROM data.
 """
 import argparse
 import concurrent.futures
@@ -162,12 +165,15 @@ def write_randomizer_patches(paths, workdir):
 
 
 def make_synthetic_rom(path):
-    # A fixed pseudo-random fill: no game data, but deterministic and dense
-    # enough that every table the Enemizer reads is non-trivial.
-    # The internal title is the only real data: the Enemizer refuses input
-    # that does not look like a randomizer ROM.
-    rng = random.Random(0x5EED)
-    rom = bytearray(rng.getrandbits(8) for _ in range(1024 * 1024))
+    """A 1 MB ROM of zeros with only the internal title set.
+
+    The Enemizer refuses input that does not look like a randomizer ROM, so
+    the title is required. There is no game data, so dungeon enemy shuffle
+    usually throws ("water room without any water sprites"); both builds must
+    still throw identically. Boss, pot, health and damage options produce
+    real patches.
+    """
+    rom = bytearray(1024 * 1024)
     rom[0x7FC0:0x7FCF] = b"ZELDANODENSETSU"
     with open(path, "wb") as f:
         f.write(rom)
@@ -179,7 +185,7 @@ def main():
     ap.add_argument("--new")
     ap.add_argument("--base")
     ap.add_argument("--rom")
-    ap.add_argument("--randomizer-patches", nargs="*", default=[])
+    ap.add_argument("--randomizer-patches", nargs="*", default=[], help="alttpr seed JSON files or directories of them")
     ap.add_argument("--cases", type=int, default=300)
     ap.add_argument("--jobs", type=int, default=os.cpu_count())
     ap.add_argument("--timeout", type=int, default=60, help="seconds per run before it counts as a hang")
