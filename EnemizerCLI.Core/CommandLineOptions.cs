@@ -12,7 +12,7 @@ namespace EnemizerCLI
         [Option("rom", Required = true, HelpText = "path to the base rom file")]
         public string BaseRomFilename { get; set; }
 
-        [Option("seed", Required = false, DefaultValue = "", HelpText = "seed number")]
+        [Option("seed", Required = false, Default = "", HelpText = "seed number")]
         public string SeedNumber { get; set; }
 
         [Option("base", Required = true, HelpText = "path to the base2patched.json")]
