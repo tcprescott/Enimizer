@@ -10,7 +10,8 @@ namespace EnemizerLibrary
     {
         public static int SnesToPCAddress(int addr)
         {
-            int temp = (addr & 0x7FFF) + ((addr / 2) & 0xFF8000);
+            // Mask off the FastROM bank bit ($80) so $B6xxxx and $36xxxx map to the same PC address.
+            int temp = ((addr & 0x7F0000) >> 1) | (addr & 0x7FFF);
             return (temp);
         }
 
