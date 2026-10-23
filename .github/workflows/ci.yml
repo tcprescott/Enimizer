@@ -18,6 +18,12 @@ jobs:
         run: tools/publish.sh linux-x64
       - name: Smoke test
         run: dist/linux-x64/EnemizerCLI.Core --help
+      # alttpr installs the tarball with composer, which extracts it with PharData.
+      - name: Tarball extracts the way composer does it
+        run: |
+          mkdir "$RUNNER_TEMP/phar"
+          php -r '(new PharData($argv[1]))->extractTo($argv[2]);' dist/linux-x64.tar.gz "$RUNNER_TEMP/phar"
+          "$RUNNER_TEMP/phar/EnemizerCLI.Core" --help
       - uses: actions/upload-artifact@v5
         with:
           name: enemizer-linux-x64

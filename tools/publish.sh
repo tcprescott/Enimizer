@@ -17,5 +17,7 @@ for rid in "${rids[@]}"; do
     rm -rf "$out"
     dotnet publish EnemizerCLI.Core/EnemizerCLI.Core.csproj -c Release -r "$rid" \
         --self-contained -p:PublishSingleFile=true -p:DebugType=none -o "$out"
-    tar -czf "dist/$rid.tar.gz" -C "$out" .
+    # List the entries instead of "." so there is no "./" entry, which
+    # composer's PharData extraction refuses.
+    (cd "$out" && tar -czf "../$rid.tar.gz" -- *)
 done
