@@ -1,5 +1,4 @@
 ﻿using CommandLine;
-using CommandLine.Text;
 using EnemizerLibrary;
 using Newtonsoft.Json;
 using System;
@@ -11,20 +10,18 @@ namespace EnemizerCLI.Core
 {
     class Program
     {
-        static void Main(string[] args)
+        static int Main(string[] args)
         {
-            var options = new CommandLineOptions();
-            if (CommandLine.Parser.Default.ParseArgumentsStrict(args, options))
-            {
-                Stopwatch stopwatch = Stopwatch.StartNew();
-                MakeEnemizerPatch(options);
-                stopwatch.Stop();
-                Console.WriteLine($"Seed generated in: {stopwatch.Elapsed}");
-            }
-            else
-            {
-                Console.Write(GetUsage(options));
-            }
+            return Parser.Default.ParseArguments<CommandLineOptions>(args)
+                .MapResult(options =>
+                {
+                    Stopwatch stopwatch = Stopwatch.StartNew();
+                    MakeEnemizerPatch(options);
+                    stopwatch.Stop();
+                    Console.WriteLine($"Seed generated in: {stopwatch.Elapsed}");
+                    return 0;
+                },
+                errors => errors.IsHelp() || errors.IsVersion() ? 0 : 1);
         }
 
         static void MakeEnemizerPatch(CommandLineOptions options)
@@ -96,13 +93,6 @@ namespace EnemizerCLI.Core
             RomData randomizedRom = randomize.MakeRandomization("", seed, optionFlags, romData, "");
 
             return randomizedRom.GeneratePatch();
-        }
-
-        [HelpOption]
-        public static string GetUsage(CommandLineOptions options)
-        {
-            return HelpText.AutoBuild(options,
-              (HelpText current) => HelpText.DefaultParsingErrorsHandler(options, current));
         }
 
     }

@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [2MBRom]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - name: Publish linux-x64
+        run: tools/publish.sh linux-x64
+      - name: Smoke test
+        run: dist/linux-x64/EnemizerCLI.Core --help
+      - uses: actions/upload-artifact@v5
+        with:
+          name: enemizer-linux-x64
+          path: dist/linux-x64.tar.gz
+
+  # Old-vs-new patch parity against the binary alttpr.com runs today
+  # (cassidoxa/Enimizer linux-build-0.1.0, .NET Core 2.0).
+  parity:
+    needs: build
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        rom: [synthetic, real]
+    env:
+      ROM_URL: ${{ secrets.ROM_URL }}
+    steps:
+      - uses: actions/checkout@v5
+        if: matrix.rom == 'synthetic' || env.ROM_URL != ''
+      - uses: actions/download-artifact@v5
+        if: matrix.rom == 'synthetic' || env.ROM_URL != ''
+        with:
+          name: enemizer-linux-x64
+      - name: Unpack builds
+        if: matrix.rom == 'synthetic' || env.ROM_URL != ''
+        run: |
+          mkdir -p "$RUNNER_TEMP/new" "$RUNNER_TEMP/old" "$RUNNER_TEMP/icu"
+          tar xzf linux-x64.tar.gz -C "$RUNNER_TEMP/new"
+          curl -fsSL https://github.com/cassidoxa/Enimizer/releases/download/linux-build-0.1.0/linux-x64.tar.gz \
+            | tar xz -C "$RUNNER_TEMP/old"
+          # The .NET Core 2.0 build only recognises ICU up to 70.
+          curl -fsSLo "$RUNNER_TEMP/icu.deb" http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu70_70.1-2_amd64.deb
+          dpkg-deb -x "$RUNNER_TEMP/icu.deb" "$RUNNER_TEMP/icu"
+      - name: Stand-in ROM
+        if: matrix.rom == 'synthetic'
+        run: tools/parity/parity.py --make-synthetic-rom "$RUNNER_TEMP/rom.sfc"
+      - name: Fetch the JP 1.0 ROM from private storage
+        if: matrix.rom == 'real' && env.ROM_URL != ''
+        run: |
+          curl -fsSLo "$RUNNER_TEMP/rom.sfc" "$ROM_URL"
+          echo "03a63945398191337e896e5771f77173  $RUNNER_TEMP/rom.sfc" | md5sum -c --quiet
+      - name: Compare patches
+        if: matrix.rom == 'synthetic' || env.ROM_URL != ''
+        run: |
+          tools/parity/parity.py --old "$RUNNER_TEMP/old" --new "$RUNNER_TEMP/new" \
+            --base tools/parity/fixtures/base-79bbb4ad512838ab01fc06b7971f656c.json \
+            --rom "$RUNNER_TEMP/rom.sfc" --randomizer-patches tools/parity/fixtures \
+            --cases 300 --env LD_LIBRARY_PATH="$RUNNER_TEMP/icu/usr/lib/x86_64-linux-gnu"
+      - name: Skipped
+        if: matrix.rom == 'real' && env.ROM_URL == ''
+        run: echo "::notice::Full-ROM parity skipped; set the ROM_URL secret to a private URL for the JP 1.0 ROM to enable it."
