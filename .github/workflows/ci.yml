@@ -5,6 +5,11 @@ on:
     branches: [2MBRom]
   pull_request:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Also publish a release with this tag (e.g. v6.2.0) on the selected branch's head
+        type: string
+        default: ''
 
 jobs:
   build:
@@ -69,3 +74,12 @@ jobs:
       - name: Skipped
         if: matrix.rom == 'real' && env.ROM_URL == ''
         run: echo "::notice::Full-ROM parity skipped; set the ROM_URL secret to a private URL for the JP 1.0 ROM to enable it."
+
+  release:
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+    needs: parity
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ inputs.release_tag }}
