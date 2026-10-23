@@ -10,15 +10,15 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
       - name: Publish linux-x64
         run: tools/publish.sh linux-x64
       - name: Smoke test
         run: dist/linux-x64/EnemizerCLI.Core --help
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: enemizer-linux-x64
           path: dist/linux-x64.tar.gz
@@ -35,9 +35,9 @@ jobs:
     env:
       ROM_URL: ${{ secrets.ROM_URL }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: matrix.rom == 'synthetic' || env.ROM_URL != ''
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         if: matrix.rom == 'synthetic' || env.ROM_URL != ''
         with:
           name: enemizer-linux-x64

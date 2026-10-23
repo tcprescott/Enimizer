@@ -21,7 +21,7 @@ namespace EnemizerCLI.Core
                     Console.WriteLine($"Seed generated in: {stopwatch.Elapsed}");
                     return 0;
                 },
-                errors => 1);
+                errors => errors.IsHelp() || errors.IsVersion() ? 0 : 1);
         }
 
         static void MakeEnemizerPatch(CommandLineOptions options)
